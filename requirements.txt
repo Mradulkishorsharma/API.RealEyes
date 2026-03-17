@@ -1,0 +1,10 @@
+flask
+flask-cors
+werkzeug
+torch
+torchvision
+torchaudio
+transformers
+opencv-python-headless
+pillow
+numpy
