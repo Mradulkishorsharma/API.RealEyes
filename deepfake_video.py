@@ -1,10 +1,11 @@
-# deepfake_video.py (updated for better frame sampling + accuracy)
+# deepfake_video.py (updated — returns per-frame data for frontend chart)
 
 import cv2
 from PIL import Image
 import os
 import random  # optional for variation if needed
 from models_loader import video_model   # ← model import yahan
+
 def analyze_video(filepath):
     filename = os.path.basename(filepath)
     
@@ -20,6 +21,7 @@ def analyze_video(filepath):
         print(f"[INFO] Video: {filename} | Total frames: {total_frames} | FPS: {fps} | Duration: {duration_sec:.1f}s")
 
         fake_scores = []
+        frame_data = []          # ← NEW: per-frame data for chart
         frames_analyzed = 0
         target_frames = min(40, max(5, int(duration_sec * 2)))  # 2 frames per second, max 40
 
@@ -48,7 +50,17 @@ def analyze_video(filepath):
                 fake_scores.append(fake_prob)
                 frames_analyzed += 1
 
-                print(f"[FRAME {frames_analyzed}] Label: {label} | Fake Prob: {fake_prob:.3f}")
+                # ← NEW: timestamp in seconds for this frame
+                timestamp_sec = round(current_frame / fps, 2) if fps > 0 else frames_analyzed
+
+                frame_data.append({
+                    "frame_num": frames_analyzed,
+                    "timestamp_sec": timestamp_sec,
+                    "fake_prob": round(fake_prob, 4),
+                    "label": "fake" if fake_prob > 0.5 else "real"
+                })
+
+                print(f"[FRAME {frames_analyzed}] t={timestamp_sec:.1f}s | Label: {label} | Fake Prob: {fake_prob:.3f}")
 
             current_frame += 1
 
@@ -75,7 +87,8 @@ def analyze_video(filepath):
             "frames_analyzed": frames_analyzed,
             "model_used": "prithivMLmods/deepfake-detector-model-v1",
             "file": filename,
-            "debug_frames": frames_analyzed  # extra for testing
+            "debug_frames": frames_analyzed,
+            "frame_data": frame_data      # ← NEW: sent to frontend
         }
 
     except Exception as e:
@@ -87,5 +100,6 @@ def analyze_video(filepath):
             "confidence_percent": 0.0,
             "summary": "Processing failed - try another video",
             "frames_analyzed": 0,
-            "model_used": "error"
+            "model_used": "error",
+            "frame_data": []
         }
